@@ -107,7 +107,21 @@ def C45_tree(D,A,node):
             node1[i] = {}
             node1[i] = ID3_tree(D1,A1,node1[i])
     node[a_start] = node1
-    return node       
+    return node     
+    
+# 数据节点的预测就是不断地去提取子树
+def decision_tree_pre(node,D):
+    L = []
+    for d in range(0,len(D)):
+        val = D.ix[d]
+        node1 = node.copy()
+        while 'node' not in node1:
+            for (i,v) in node1.items():
+                node1 = v[D.ix[d][i]]
+        L.append(node1['node'])
+    return L
+        
+    
     
 if __name__ == '__main__':
     D_train = {'色泽':['青绿','乌黑','乌黑','青绿','乌黑','青绿','浅白','乌黑','浅白','青绿'],
@@ -117,17 +131,28 @@ if __name__ == '__main__':
                '脐部':['凹陷','凹陷','凹陷','稍凹','稍凹','平坦','凹陷','稍凹','平坦','稍凹'],
                '触感':['硬滑','硬滑','硬滑','软粘','软粘','软粘','硬滑','软粘','硬滑','硬滑'],
                'label':['是','是','是','是','是','否','否','否','否','否']}
+    D_test = { '色泽':['青绿','浅白','乌黑','乌黑','浅白','浅白','青绿'],
+               '根蒂':['蜷缩','蜷缩','稍蜷','稍蜷','硬挺','蜷缩','稍蜷'],
+               '敲声':['沉闷','浊响','浊响','沉闷','清脆','浊响','浊响'],
+               '纹理':['清晰','清晰','清晰','稍糊','模糊','模糊','稍糊'],
+               '脐部':['凹陷','凹陷','稍凹','稍凹','平坦','平坦','凹陷'],
+               '触感':['硬滑','硬滑','硬滑','硬滑','硬滑','软粘','硬滑'],
+               'label':['是','是','是','否','否','否','否']}
     A = {}
     for i in D_train.keys():
         if i != 'label':
             A[i] = set(D_train[i])
     D_train = DataFrame(D_train)
+    D_test = DataFrame(D_test)
     node = {}
     node = ID3_tree(D_train,A,node)
     node1 = {}
     node1= C45_tree(D_train,A,node)
+    L = decision_tree_pre(node,D_train)
+    accuary = sum(D_train['label'] == L)/len(L)
 
-
+# 这里数据训练过小，数据学习过差，如果想要提高算法模型，可以换一下数据集
+# PS:决策树算法模型还没有对其进行剪枝
 
 
 
