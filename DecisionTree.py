@@ -1,7 +1,6 @@
 ﻿# -*- coding: utf-8 -*-
 """
 Created on Mon Sep  4 15:00:36 2017
-
 @author: xiao
 """
 
@@ -17,15 +16,15 @@ def check_unique(D,A):
             return False
     return True
 
-def Ent(D):
+def Ent(D,label):
     ent = 0
-    for i in set(D.label):
-        ent += -(sum(D.label == i)/len(D) * np.log2(sum(D.label == i)/len(D)))
+    for i in set(D[label]):
+        ent += -(sum(D[label] == i)/len(D) * np.log2(sum(D[label] == i)/len(D)))
     return ent
-def Ent_n(D,A,a):
+def Ent_n(D,A,label,a):
     var = []
     for i in A[a]:
-        var.append(Ent(D[D[a] == i]))
+        var.append(Ent(D[D[a] == i],label))
     return np.array(var)
 def P(D,A,a):
     p = []
@@ -39,78 +38,78 @@ def IV(D,A,a):
         iv += -(sum(D[a] == i)/len(D)*np.log2(sum(D[a] == i)/len(D)))
     return iv
 # 选择最佳属性    
-def best_gain_var(D,A):
+def best_gain_var(D,A,label):
     var = []
     gain = []
     for a in A.keys():
-        gain.append(Ent(D) - sum(P(D,A,a)*Ent_n(D,A,a)))
+        gain.append(Ent(D,label) - sum(P(D,A,a)*Ent_n(D,A,label,a)))
         var.append(a)
     return var[gain.index(max(gain))]
-def best_gainratio_var(D,A):
+def best_gainratio_var(D,A,label):
     var = []
     gain = []
     for a in A.keys():
-        gain.append((Ent(D) - sum(P(D,A,a)*Ent_n(D,A,a)))/IV(D,A,a))
+        gain.append((Ent(D,label) - sum(P(D,A,a)*Ent_n(D,A,label,a)))/IV(D,A,a))
         var.append(a)
     return var[gain.index(max(gain))]
         
-def mylabel(D):
+def mylabel(D,label):
     mark = []
     num = []
-    for i in set(D.label):
-        num.append(list(D.label).count(i))
+    for i in set(D[label]):
+        num.append(list(D[label]).count(i))
         mark.append(i)
     my_label = mark[num.index(max(num))]
     return my_label
                
-def ID3_tree(D,A,node):
-    if set(D.label) == 1:   
-        node['node'] = set(D.label)
+def ID3_tree(D,A,label,node):
+    if set(D[label]) == 1:   
+        node[label] = set(D[label])
         return node
     if (not any(A)) or check_unique(D,A):
-        node['node'] = mylabel(D)#max(list(D.label).count(x) for x in set(D.label))
+        node[label] = mylabel(D,label)#max(list(D.label).count(x) for x in set(D.label))
         return node
-    a_start = best_gain_var(D,A) # 选出纯度最高的属性，即信息增益最高的属性
+    a_start = best_gain_var(D,A,label) # 选出纯度最高的属性，即信息增益最高的属性
     node1 ={}
     
     for i in set(A[str(a_start)]):
         if sum(D[a_start] == i) == 0:
-            node['node'] = mylabel(D)#max(list(D.label).count(x) for x in set(D.label))
+            node[label] = mylabel(D,label)#max(list(D.label).count(x) for x in set(D.label))
             return node
         else:
             D1 = D[D[a_start] == i]
             A1 = A.copy()
             A1.pop(a_start)
             node1[i] = {}
-            node1[i] = ID3_tree(D1,A1,node1[i])
+            node1[i] = ID3_tree(D1,A1,label,node1[i])
     node[a_start] = node1
     return node   
     
-def C45_tree(D,A,node):
-    if set(D.label) == 1:   
-        node['node'] = set(D.label)
+def C45_tree(D,A,label,node):
+    if set(D[label]) == 1:   
+        node[label] = set(D[label])
         return node
     if (not any(A)) or check_unique(D,A):
-        node['node'] =  mylabel(D)# max(list(D.label).count(x) for x in set(D.label))
+        node[label] =  mylabel(D,label)# max(list(D.label).count(x) for x in set(D.label))
         return node
-    a_start = best_gainratio_var(D,A) # 选出纯度最高的属性，即信息增益最高的属性
+    a_start = best_gainratio_var(D,A,label) # 选出纯度最高的属性，即信息增益最高的属性
     node1 ={}
     
     for i in set(A[str(a_start)]):
         if sum(D[a_start] == i) == 0:
-            node['node'] = mylabel(D)#max(list(D.label).count(x) for x in set(D.label))
+            node[label] = mylabel(D,label)#max(list(D.label).count(x) for x in set(D.label))
             return node
         else:
             D1 = D[D[a_start] == i]
             A1 = A.copy()
             A1.pop(a_start)
             node1[i] = {}
-            node1[i] = ID3_tree(D1,A1,node1[i])
+            node1[i] = C45_tree(D1,A1,label,node1[i])
     node[a_start] = node1
     return node     
     
 # 数据节点的预测就是不断地去提取子树
-def decision_tree_pre(node,D):
+def decision_tree_pre(node,D,label):
     L = []
     for d in range(0,len(D)):
         val = D.ix[d]
@@ -118,7 +117,7 @@ def decision_tree_pre(node,D):
         while 'node' not in node1:
             for (i,v) in node1.items():
                 node1 = v[D.ix[d][i]]
-        L.append(node1['node'])
+        L.append(node1[label])
     return L
         
     
@@ -130,42 +129,26 @@ if __name__ == '__main__':
                '纹理':['清晰','清晰','清晰','清晰','稍糊','清晰','稍糊','清晰','模糊','稍糊'],
                '脐部':['凹陷','凹陷','凹陷','稍凹','稍凹','平坦','凹陷','稍凹','平坦','稍凹'],
                '触感':['硬滑','硬滑','硬滑','软粘','软粘','软粘','硬滑','软粘','硬滑','硬滑'],
-               'label':['是','是','是','是','是','否','否','否','否','否']}
+               '标签':['是','是','是','是','是','否','否','否','否','否']}
     D_test = { '色泽':['青绿','浅白','乌黑','乌黑','浅白','浅白','青绿'],
                '根蒂':['蜷缩','蜷缩','稍蜷','稍蜷','硬挺','蜷缩','稍蜷'],
                '敲声':['沉闷','浊响','浊响','沉闷','清脆','浊响','浊响'],
                '纹理':['清晰','清晰','清晰','稍糊','模糊','模糊','稍糊'],
                '脐部':['凹陷','凹陷','稍凹','稍凹','平坦','平坦','凹陷'],
                '触感':['硬滑','硬滑','硬滑','硬滑','硬滑','软粘','硬滑'],
-               'label':['是','是','是','否','否','否','否']}
+               '标签':['是','是','是','否','否','否','否']}
+    label = '标签'
     A = {}
     for i in D_train.keys():
-        if i != 'label':
+        if i != label:
             A[i] = set(D_train[i])
     D_train = DataFrame(D_train)
     D_test = DataFrame(D_test)
     node = {}
-    node = ID3_tree(D_train,A,node)
+    node = ID3_tree(D_train,A,label,node)
     node1 = {}
-    node1= C45_tree(D_train,A,node)
-    L = decision_tree_pre(node,D_train)
-    accuary = sum(D_train['label'] == L)/len(L)
+    node1= C45_tree(D_train,A,label,node1)
 
 # 这里数据训练过小，数据学习过差，如果想要提高算法模型，可以换一下数据集
 # PS:决策树算法模型还没有对其进行剪枝
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
