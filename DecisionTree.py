@@ -10,34 +10,37 @@ Created on Mon Sep  4 15:00:36 2017
 # 决策树重要的是一棵树，即结点的选择
 from pandas import Series,DataFrame
 import numpy as np
+# 检查D在属性A上的取值是否一致，一致则返回True,否则返回False
 def check_unique(D,A):
     for i in A:
         if len(set(D[i])) != 1:
             return False
     return True
-
+# 计算信息熵
 def Ent(D,label):
     ent = 0
     for i in set(D[label]):
         ent += -(sum(D[label] == i)/len(D) * np.log2(sum(D[label] == i)/len(D)))
     return ent
+# 返回D在属性a上的一系列信息熵
 def Ent_n(D,A,label,a):
     var = []
     for i in A[a]:
         var.append(Ent(D[D[a] == i],label))
     return np.array(var)
+# 返回D在属性a上的子集占比
 def P(D,A,a):
     p = []
     for i in A[a]:
         p.append(sum(D[a] == i)/len(D))
     return np.array(p)
-
+# 返回计算C4.5需要的系数
 def IV(D,A,a):
     iv = 0
     for i in A[a]:
         iv += -(sum(D[a] == i)/len(D)*np.log2(sum(D[a] == i)/len(D)))
     return iv
-# 选择最佳属性    
+# 选择最佳属性--ID3算法  
 def best_gain_var(D,A,label):
     var = []
     gain = []
@@ -45,6 +48,7 @@ def best_gain_var(D,A,label):
         gain.append(Ent(D,label) - sum(P(D,A,a)*Ent_n(D,A,label,a)))
         var.append(a)
     return var[gain.index(max(gain))]
+# 选择最佳属性--C4.5算法
 def best_gainratio_var(D,A,label):
     var = []
     gain = []
@@ -52,7 +56,7 @@ def best_gainratio_var(D,A,label):
         gain.append((Ent(D,label) - sum(P(D,A,a)*Ent_n(D,A,label,a)))/IV(D,A,a))
         var.append(a)
     return var[gain.index(max(gain))]
-        
+# 选择父节点类别占多的类        
 def mylabel(D,label):
     mark = []
     num = []
